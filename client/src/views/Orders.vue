@@ -29,6 +29,55 @@
 
       <div class="card">
         <div class="card-header">
+          <h3 class="card-title">{{ t('orders.submittedOrders.title') }} ({{ restockOrders.length }})</h3>
+        </div>
+        <div v-if="restockLoading" class="loading">{{ t('common.loading') }}</div>
+        <div v-else-if="restockError" class="error">{{ restockError }}</div>
+        <div v-else-if="restockOrders.length === 0" class="empty-state">{{ t('orders.submittedOrders.empty') }}</div>
+        <div v-else class="table-container">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th class="col-order-number">{{ t('orders.submittedOrders.table.orderNumber') }}</th>
+                <th class="col-items">{{ t('orders.submittedOrders.table.items') }}</th>
+                <th class="col-date">{{ t('orders.submittedOrders.table.submittedDate') }}</th>
+                <th class="col-lead-time">{{ t('orders.submittedOrders.table.leadTime') }}</th>
+                <th class="col-date">{{ t('orders.submittedOrders.table.expectedDelivery') }}</th>
+                <th class="col-value">{{ t('orders.submittedOrders.table.total') }}</th>
+                <th class="col-status">{{ t('orders.submittedOrders.table.status') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="order in restockOrders" :key="order.id">
+                <td class="col-order-number"><strong>{{ order.order_number }}</strong></td>
+                <td class="col-items">
+                  <details class="items-details">
+                    <summary class="items-summary">
+                      {{ t('orders.itemsCount', { count: order.items.length }) }}
+                    </summary>
+                    <div class="items-dropdown">
+                      <div v-for="item in order.items" :key="item.sku" class="item-entry">
+                        <span class="item-name">{{ translateProductName(item.name) }}</span>
+                        <span class="item-meta">{{ item.sku }} - {{ t('orders.quantity') }}: {{ item.quantity }} @ {{ formatMoney(item.unit_cost, 2) }}</span>
+                      </div>
+                    </div>
+                  </details>
+                </td>
+                <td class="col-date">{{ formatDate(order.submitted_date) }}</td>
+                <td class="col-lead-time">{{ t('orders.submittedOrders.leadTimeDays', { count: order.lead_time_days }) }}</td>
+                <td class="col-date">{{ formatDate(order.expected_delivery) }}</td>
+                <td class="col-value"><strong>{{ formatMoney(order.total_value, 2) }}</strong></td>
+                <td class="col-status">
+                  <span class="badge info">{{ translateRestockStatus(order.status) }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
           <h3 class="card-title">{{ t('orders.allOrders') }} ({{ orders.length }})</h3>
         </div>
         <div class="table-container">
@@ -83,6 +132,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { api } from '../api'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
+import { formatCurrencyWithDecimals } from '../utils/currency'
 
 export default {
   name: 'Orders',
@@ -95,6 +145,12 @@ export default {
     const loading = ref(true)
     const error = ref(null)
     const orders = ref([])
+
+    // Submitted restock orders load independently: not filtered, and a failure
+    // here must not block the main orders list
+    const restockOrders = ref([])
+    const restockLoading = ref(true)
+    const restockError = ref(null)
 
     // Use shared filters
     const {
@@ -124,6 +180,28 @@ export default {
       }
     }
 
+    const loadRestockOrders = async () => {
+      try {
+        restockLoading.value = true
+        restockError.value = null
+        restockOrders.value = await api.getRestockOrders()
+      } catch (err) {
+        restockError.value = t('orders.submittedOrders.loadFailed') + ': ' + err.message
+      } finally {
+        restockLoading.value = false
+      }
+    }
+
+    const formatMoney = (amount, decimals = 0) => {
+      return formatCurrencyWithDecimals(amount, currentCurrency.value, decimals)
+    }
+
+    const translateRestockStatus = (status) => {
+      const key = `orders.submittedOrders.statuses.${String(status).toLowerCase()}`
+      const label = t(key)
+      return label === key ? status : label
+    }
+
     // Watch for filter changes and reload data
     watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], () => {
       loadOrders()
@@ -146,14 +224,19 @@ export default {
     const formatDate = (dateString) => {
       const { currentLocale } = useI18n()
       const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
-      return new Date(dateString).toLocaleDateString(locale, {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return '—'
+      return date.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
       })
     }
 
-    onMounted(loadOrders)
+    onMounted(() => {
+      loadOrders()
+      loadRestockOrders()
+    })
 
     return {
       t,
@@ -165,7 +248,12 @@ export default {
       formatDate,
       currencySymbol,
       translateProductName,
-      translateCustomerName
+      translateCustomerName,
+      restockOrders,
+      restockLoading,
+      restockError,
+      formatMoney,
+      translateRestockStatus
     }
   }
 }
@@ -201,6 +289,17 @@ export default {
 
 .col-value {
   width: 120px;
+}
+
+.col-lead-time {
+  width: 110px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  font-size: 0.938rem;
 }
 
 /* Items details styling */

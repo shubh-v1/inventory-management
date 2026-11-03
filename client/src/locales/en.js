@@ -6,6 +6,7 @@ export default {
     orders: 'Orders',
     finance: 'Finance',
     demandForecast: 'Demand Forecast',
+    restocking: 'Restocking',
     companyName: 'Catalyst Components',
     subtitle: 'Inventory Management System'
   },
@@ -126,6 +127,24 @@ export default {
       status: 'Status',
       expectedDelivery: 'Expected Delivery',
       actualDelivery: 'Actual Delivery'
+    },
+    submittedOrders: {
+      title: 'Submitted Orders',
+      empty: 'No restocking orders submitted yet',
+      loadFailed: 'Failed to load submitted orders',
+      leadTimeDays: '{count} days',
+      statuses: {
+        submitted: 'Submitted'
+      },
+      table: {
+        orderNumber: 'Order Number',
+        items: 'Items',
+        submittedDate: 'Submitted',
+        leadTime: 'Lead Time',
+        expectedDelivery: 'Expected Delivery',
+        total: 'Total',
+        status: 'Status'
+      }
     }
   },
 
@@ -185,6 +204,39 @@ export default {
       change: 'Change',
       trend: 'Trend',
       period: 'Period'
+    }
+  },
+
+  // Restocking
+  restocking: {
+    title: 'Restocking',
+    description: 'Plan restock orders from the demand forecast within a budget',
+    budget: 'Budget',
+    budgetHint: 'Items with increasing demand are funded first, then by shortfall value. Funding stops at the first item the remaining budget cannot fully cover.',
+    totalCost: 'Total Cost',
+    budgetRemaining: 'Budget Remaining',
+    longestLeadTime: 'Longest Lead Time',
+    recommendations: 'Recommended Restock',
+    itemsFunded: '{funded} of {total} items funded',
+    notFunded: 'Not funded',
+    noShortfall: 'Current stock covers all forecasted demand. No restocking needed.',
+    days: '{count} days',
+    placeOrder: 'Place Order',
+    placingOrder: 'Placing Order...',
+    orderPlaced: 'Order {orderNumber} submitted.',
+    viewOrders: 'View in Orders',
+    orderFailed: 'Failed to place order',
+    loadFailed: 'Failed to load restocking data',
+    table: {
+      sku: 'SKU',
+      item: 'Item',
+      trend: 'Trend',
+      onHand: 'On Hand',
+      forecast: 'Forecast',
+      recommendedQty: 'Recommended Qty',
+      unitCost: 'Unit Cost',
+      lineTotal: 'Line Total',
+      leadTime: 'Lead Time'
     }
   },
 
