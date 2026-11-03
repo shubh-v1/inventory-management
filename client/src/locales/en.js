@@ -11,6 +11,8 @@ export default {
     groupOperations: 'Operations',
     groupPlanning: 'Planning',
     toggleMenu: 'Toggle navigation menu',
+    collapseSidebar: 'Collapse sidebar',
+    expandSidebar: 'Expand sidebar',
     mainNavigation: 'Main navigation',
     breadcrumb: 'Breadcrumb',
     companyName: 'Catalyst Components',

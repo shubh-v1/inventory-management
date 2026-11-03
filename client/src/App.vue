@@ -1,5 +1,8 @@
 <template>
-  <div class="app" :class="{ 'sidebar-open': sidebarOpen }">
+  <div
+    class="app"
+    :class="{ 'sidebar-open': sidebarOpen, 'sidebar-rail': railMode, 'layout-medium': isMedium }"
+  >
     <aside id="app-sidebar" class="sidebar">
       <div class="sidebar-brand">
         <span class="brand-mark" aria-hidden="true">
@@ -23,6 +26,7 @@
             :key="item.path"
             :to="item.path"
             class="nav-item"
+            :data-label="t(item.labelKey)"
             :active-class="item.path === '/' ? '' : 'active'"
             exact-active-class="active"
           >
@@ -34,7 +38,23 @@
         </div>
       </nav>
 
-      <div class="sidebar-footer">v1.0</div>
+      <div class="sidebar-footer">
+        <span class="sidebar-version">v1.0</span>
+        <button
+          type="button"
+          class="sidebar-collapse"
+          :aria-expanded="railMode ? 'false' : 'true'"
+          aria-controls="app-sidebar"
+          :aria-label="railMode ? t('nav.expandSidebar') : t('nav.collapseSidebar')"
+          :title="railMode ? t('nav.expandSidebar') : t('nav.collapseSidebar')"
+          @click="toggleSidebar"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 17l-5-5 5-5" />
+            <path d="M18 17l-5-5 5-5" />
+          </svg>
+        </button>
+      </div>
     </aside>
 
     <div class="sidebar-backdrop" @click="sidebarOpen = false"></div>
@@ -148,8 +168,52 @@ export default {
       return item ? item.labelKey : null
     })
 
-    // Off-canvas drawer state (only visible below 1024px)
+    // Sidebar has three layouts, picked by viewport width:
+    //   >= 1280px  full sidebar; the user can collapse it to an icon rail (remembered)
+    //   768-1279px icon rail; "expand" opens the full sidebar as an overlay
+    //   < 768px    hidden; the header hamburger opens it as an off-canvas drawer
+    // sidebarOpen drives the overlay/drawer, sidebarCollapsed the desktop preference.
+    const COLLAPSED_KEY = 'sidebar-collapsed'
+    const mobileQuery = window.matchMedia('(max-width: 767px)')
+    const mediumDownQuery = window.matchMedia('(max-width: 1279px)')
+    const isMobile = ref(mobileQuery.matches)
+    const isMediumDown = ref(mediumDownQuery.matches)
+    const isMedium = computed(() => isMediumDown.value && !isMobile.value)
+
     const sidebarOpen = ref(false)
+    const sidebarCollapsed = ref(false)
+    try {
+      sidebarCollapsed.value = localStorage.getItem(COLLAPSED_KEY) === 'true'
+    } catch (e) {
+      // Storage can be unavailable (private mode); fall back to expanded
+    }
+
+    const railMode = computed(() => {
+      if (isMobile.value) return false
+      if (isMedium.value) return !sidebarOpen.value
+      return sidebarCollapsed.value
+    })
+
+    const toggleSidebar = () => {
+      if (isMedium.value) {
+        sidebarOpen.value = !sidebarOpen.value
+        return
+      }
+      sidebarCollapsed.value = !sidebarCollapsed.value
+      try {
+        localStorage.setItem(COLLAPSED_KEY, String(sidebarCollapsed.value))
+      } catch (e) {
+        // Preference just won't persist
+      }
+    }
+
+    // An overlay/drawer left open must not carry over into another layout
+    // (e.g. a drawer opened on mobile showing a backdrop on desktop)
+    const onBreakpointChange = () => {
+      isMobile.value = mobileQuery.matches
+      isMediumDown.value = mediumDownQuery.matches
+      sidebarOpen.value = false
+    }
 
     // Close the drawer whenever the user navigates to another page
     watch(() => route.path, () => {
@@ -228,10 +292,14 @@ export default {
     onMounted(() => {
       loadTasks()
       document.addEventListener('keydown', onKeydown)
+      mobileQuery.addEventListener('change', onBreakpointChange)
+      mediumDownQuery.addEventListener('change', onBreakpointChange)
     })
 
     onUnmounted(() => {
       document.removeEventListener('keydown', onKeydown)
+      mobileQuery.removeEventListener('change', onBreakpointChange)
+      mediumDownQuery.removeEventListener('change', onBreakpointChange)
     })
 
     return {
@@ -239,6 +307,9 @@ export default {
       navGroups,
       currentPageKey,
       sidebarOpen,
+      railMode,
+      isMedium,
+      toggleSidebar,
       showProfileDetails,
       showTasks,
       tasks,
@@ -287,7 +358,7 @@ export default {
   --focus-ring: 0 0 0 3px var(--color-accent-soft);
 
   /* layout and layering */
-  --sidebar-width: 240px; --header-height: 64px; --content-max: 1440px;
+  --sidebar-width: 240px; --sidebar-rail-width: 72px; --header-height: 64px; --content-max: 1440px;
   --z-filterbar: 45; --z-header: 50; --z-backdrop: 55; --z-sidebar: 60;
   --z-dropdown: 1000; --z-modal: 2000;
 }
@@ -326,6 +397,8 @@ body {
   border-right: 1px solid var(--color-border);
   z-index: var(--z-sidebar);
   overflow-y: auto;
+  overflow-x: hidden;
+  transition: width 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sidebar-brand {
@@ -452,14 +525,139 @@ body {
 }
 
 .sidebar-footer {
-  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
   font-size: var(--text-xs);
   color: var(--color-text-subtle);
   border-top: 1px solid var(--color-border);
 }
 
+.sidebar-collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-collapse:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.sidebar-collapse:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.sidebar-collapse svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s ease;
+}
+
 .sidebar-backdrop {
   display: none;
+}
+
+/* Overlay/drawer backdrop, used by the medium-width overlay and the mobile drawer */
+.sidebar-open .sidebar-backdrop {
+  display: block;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  z-index: var(--z-backdrop);
+}
+
+/* ---------- Icon rail (collapsed sidebar) ---------- */
+.sidebar-rail .sidebar {
+  width: var(--sidebar-rail-width);
+  /* Visible overflow lets the hover tooltips extend past the rail; the seven
+     nav items fit the viewport height, so nothing needs to scroll */
+  overflow: visible;
+}
+
+.sidebar-rail .brand-text,
+.sidebar-rail .sidebar-version {
+  display: none;
+}
+
+/* Group headings collapse to thin dividers; the text stays for screen readers */
+.sidebar-rail .nav-group-label {
+  height: 1px;
+  padding: 0;
+  margin: 0 var(--space-2) var(--space-2);
+  overflow: hidden;
+  color: transparent;
+  background: var(--color-border);
+}
+
+.sidebar-rail .nav-group:first-child .nav-group-label {
+  background: transparent;
+}
+
+.sidebar-rail .nav-item {
+  justify-content: center;
+  padding: 0;
+}
+
+/* Visually hidden, but still the link's accessible name */
+.sidebar-rail .nav-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Tooltip with the page name, shown on hover and keyboard focus */
+.sidebar-rail .nav-item::after {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(100% + var(--space-3));
+  top: 50%;
+  transform: translateY(-50%);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-text);
+  color: #ffffff;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.sidebar-rail .nav-item:hover::after,
+.sidebar-rail .nav-item:focus-visible::after {
+  opacity: 1;
+}
+
+.sidebar-rail .sidebar-footer {
+  justify-content: center;
+  padding: var(--space-3) 0;
+}
+
+/* Chevrons point left to collapse, right to expand */
+.sidebar-rail .sidebar-collapse svg {
+  transform: rotate(180deg);
+}
+
+.sidebar-rail .app-main {
+  margin-left: var(--sidebar-rail-width);
 }
 
 /* ---------- Main column ---------- */
@@ -469,6 +667,7 @@ body {
   flex-direction: column;
   margin-left: var(--sidebar-width);
   min-width: 0;
+  transition: margin-left 0.2s ease;
 }
 
 .app-header {
@@ -867,11 +1066,31 @@ td.num {
   font-size: var(--text-base);
 }
 
-/* ---------- Responsive: sidebar becomes an off-canvas drawer ---------- */
+/* ---------- Medium widths: rail by default, full sidebar as an overlay ---------- */
+/* The content keeps the rail's margin while the overlay is open, so the page
+   doesn't shift underneath it */
+.layout-medium .app-main {
+  margin-left: var(--sidebar-rail-width);
+}
+
+.layout-medium.sidebar-open .sidebar {
+  box-shadow: var(--shadow-lg);
+}
+
 @media (max-width: 1023px) {
+  .app-header {
+    padding: 0 var(--space-4);
+  }
+
+  .content-inner {
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
+/* ---------- Mobile: sidebar becomes an off-canvas drawer ---------- */
+@media (max-width: 767px) {
   .sidebar {
     transform: translateX(-100%);
-    transition: transform 0.2s ease;
     box-shadow: none;
   }
 
@@ -880,28 +1099,17 @@ td.num {
     box-shadow: var(--shadow-lg);
   }
 
-  .sidebar-open .sidebar-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.4);
-    z-index: var(--z-backdrop);
-  }
-
   .app-main {
     margin-left: 0;
-  }
-
-  .app-header {
-    padding: 0 var(--space-4);
   }
 
   .menu-toggle {
     display: inline-flex;
   }
 
-  .content-inner {
-    padding: var(--space-6) var(--space-4);
+  /* The drawer closes via backdrop, Escape or navigation; no collapse control */
+  .sidebar-collapse {
+    display: none;
   }
 }
 

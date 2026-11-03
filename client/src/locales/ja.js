@@ -11,6 +11,8 @@ export default {
     groupOperations: 'オペレーション',
     groupPlanning: 'プランニング',
     toggleMenu: 'ナビゲーションメニューを切り替え',
+    collapseSidebar: 'サイドバーを折りたたむ',
+    expandSidebar: 'サイドバーを展開',
     mainNavigation: 'メインナビゲーション',
     breadcrumb: 'パンくずリスト',
     companyName: '触媒コンポーネンツ',
