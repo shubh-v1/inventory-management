@@ -94,7 +94,7 @@
                   :key="item.sku"
                   :class="{ 'not-funded': item.quantity === 0 }"
                 >
-                  <td><strong>{{ item.sku }}</strong></td>
+                  <td class="nowrap"><strong>{{ item.sku }}</strong></td>
                   <td>{{ translateProductName(item.name) }}</td>
                   <td>
                     <span :class="['badge', item.trend]">{{ t(`trends.${item.trend}`) }}</span>
@@ -294,113 +294,172 @@ export default {
 </script>
 
 <style scoped>
-.budget-card {
-  padding: 1.5rem;
-}
-
 .budget-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .budget-label {
-  color: #64748b;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 
 .budget-value {
-  font-size: 1.875rem;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.025em;
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
+/* Range input restyled as a slim accent track with a white thumb */
 .budget-slider {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
-  accent-color: #3b82f6;
+  height: 36px;
+  background: transparent;
   cursor: pointer;
+}
+
+.budget-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+}
+
+.budget-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 2px solid var(--color-accent);
+  box-shadow: var(--shadow-md);
+}
+
+.budget-slider::-moz-range-track {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+}
+
+.budget-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+}
+
+.budget-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 2px solid var(--color-accent);
+}
+
+.budget-slider:focus {
+  outline: none;
+}
+
+.budget-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: var(--focus-ring);
 }
 
 .budget-scale {
   display: flex;
   justify-content: space-between;
-  font-size: 0.813rem;
-  color: #64748b;
-  margin-top: 0.25rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .budget-hint {
-  margin-top: 0.75rem;
-  font-size: 0.813rem;
-  color: #64748b;
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
 .funded-count {
-  margin-left: 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #64748b;
+  margin-left: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--color-text-muted);
   letter-spacing: normal;
 }
 
 .place-order-button {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.813rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-base);
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   white-space: nowrap;
-  background: #3b82f6;
-  color: white;
+  background: var(--color-accent);
+  color: #ffffff;
 }
 
 .place-order-button:hover:not(:disabled) {
-  background: #2563eb;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.place-order-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .place-order-button:disabled {
-  background: #cbd5e1;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .success-message {
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
-  padding: 1rem;
-  border-radius: 8px;
-  margin: 1rem 0;
-  font-size: 0.938rem;
+  background: var(--color-success-soft);
+  border: 1px solid rgba(22, 163, 74, 0.2);
+  color: var(--color-success-strong);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-base);
 }
 
 .success-link {
-  margin-left: 0.5rem;
-  color: #059669;
+  margin-left: var(--space-2);
+  color: var(--color-success-strong);
   font-weight: 600;
 }
 
 .empty-state {
   text-align: center;
-  color: #64748b;
-  padding: 3rem;
+  color: var(--color-text-muted);
+  padding: var(--space-10);
 }
 
-th.num,
+.nowrap {
+  white-space: nowrap;
+}
+
 td.num {
-  text-align: right;
+  white-space: nowrap;
 }
 
 tr.not-funded td {
-  color: #94a3b8;
+  color: var(--color-text-subtle);
 }
 
 tr.not-funded .badge {
@@ -408,15 +467,13 @@ tr.not-funded .badge {
 }
 
 .not-funded-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-  color: #94a3b8;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text-subtle);
 }
 
 .partial-note {
-  color: #64748b;
-  font-size: 0.813rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
 }
 </style>

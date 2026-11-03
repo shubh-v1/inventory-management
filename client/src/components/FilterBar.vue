@@ -102,93 +102,144 @@ export default {
 
 <style scoped>
 .filters-bar {
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 0.75rem 0;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3) 0;
   position: sticky;
-  top: 70px;
-  z-index: 90;
+  top: var(--header-height);
+  z-index: var(--z-filterbar);
 }
 
 .filters-container {
-  max-width: 1600px;
+  max-width: var(--content-max);
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 var(--space-8);
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .filters-grid {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
   flex: 1;
+  min-width: 0;
 }
 
 .filter-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .filter-group label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
   white-space: nowrap;
 }
 
 .filter-select {
-  padding: 0.4rem 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 0.813rem;
-  color: #0f172a;
-  background: white;
-  cursor: pointer;
-  transition: all 0.2s;
+  height: 36px;
+  padding: 0 var(--space-8) 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-base);
   font-weight: 500;
-  min-width: 140px;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  /* Custom chevron so the select matches the 36px input style across browsers */
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2364748b' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-2) center;
+  background-size: 16px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  min-width: 150px;
 }
 
 .filter-select:hover {
-  border-color: #94a3b8;
+  border-color: var(--color-text-subtle);
 }
 
 .filter-select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
 }
 
 .reset-filters-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.4rem;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  color: #64748b;
+  width: 36px;
+  height: 36px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   flex-shrink: 0;
 }
 
 .reset-filters-btn:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #0f172a;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.reset-filters-btn:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
 }
 
 .reset-filters-btn:disabled {
-  opacity: 0.3;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .reset-filters-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
+}
+
+/* Below 1024px the filters wrap and scroll away with the page */
+@media (max-width: 1023px) {
+  .filters-bar {
+    position: static;
+  }
+
+  .filters-container {
+    padding: 0 var(--space-4);
+    align-items: flex-start;
+  }
+
+  .filters-grid {
+    gap: var(--space-3);
+  }
+}
+
+@media (max-width: 640px) {
+  .filters-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .filter-select {
+    min-width: 0;
+    width: 100%;
+  }
 }
 </style>

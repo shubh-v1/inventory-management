@@ -1,45 +1,80 @@
 <template>
-  <div class="app">
-    <header class="top-nav">
-      <div class="nav-container">
-        <div class="logo">
-          <h1>{{ t('nav.companyName') }}</h1>
-          <span class="subtitle">{{ t('nav.subtitle') }}</span>
+  <div class="app" :class="{ 'sidebar-open': sidebarOpen }">
+    <aside id="app-sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 8l-9-5-9 5v8l9 5 9-5V8z" />
+            <path d="M3 8l9 5 9-5" />
+            <path d="M12 13v8" />
+          </svg>
+        </span>
+        <div class="brand-text">
+          <span class="brand-name">{{ t('nav.companyName') }}</span>
+          <span class="brand-subtitle">{{ t('nav.subtitle') }}</span>
         </div>
-        <nav class="nav-tabs">
-          <router-link to="/" :class="{ active: $route.path === '/' }">
-            {{ t('nav.overview') }}
-          </router-link>
-          <router-link to="/inventory" :class="{ active: $route.path === '/inventory' }">
-            {{ t('nav.inventory') }}
-          </router-link>
-          <router-link to="/orders" :class="{ active: $route.path === '/orders' }">
-            {{ t('nav.orders') }}
-          </router-link>
-          <router-link to="/spending" :class="{ active: $route.path === '/spending' }">
-            {{ t('nav.finance') }}
-          </router-link>
-          <router-link to="/demand" :class="{ active: $route.path === '/demand' }">
-            {{ t('nav.demandForecast') }}
-          </router-link>
-          <router-link to="/restocking" :class="{ active: $route.path === '/restocking' }">
-            {{ t('nav.restocking') }}
-          </router-link>
-          <router-link to="/reports" :class="{ active: $route.path === '/reports' }">
-            Reports
-          </router-link>
-        </nav>
-        <LanguageSwitcher />
-        <ProfileMenu
-          @show-profile-details="showProfileDetails = true"
-          @show-tasks="showTasks = true"
-        />
       </div>
-    </header>
-    <FilterBar />
-    <main class="main-content">
-      <router-view />
-    </main>
+
+      <nav class="sidebar-nav" :aria-label="t('nav.mainNavigation')">
+        <div v-for="group in navGroups" :key="group.labelKey" class="nav-group">
+          <div class="nav-group-label">{{ t(group.labelKey) }}</div>
+          <router-link
+            v-for="item in group.items"
+            :key="item.path"
+            :to="item.path"
+            class="nav-item"
+            :active-class="item.path === '/' ? '' : 'active'"
+            exact-active-class="active"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path v-for="d in item.icon" :key="d" :d="d" />
+            </svg>
+            <span class="nav-label">{{ t(item.labelKey) }}</span>
+          </router-link>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">v1.0</div>
+    </aside>
+
+    <div class="sidebar-backdrop" @click="sidebarOpen = false"></div>
+
+    <div class="app-main">
+      <header class="app-header">
+        <div class="header-left">
+          <button
+            type="button"
+            class="menu-toggle"
+            :aria-expanded="sidebarOpen ? 'true' : 'false'"
+            aria-controls="app-sidebar"
+            :aria-label="t('nav.toggleMenu')"
+            @click="sidebarOpen = !sidebarOpen"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <nav class="breadcrumb" :aria-label="t('nav.breadcrumb')">
+            <span class="breadcrumb-root">{{ t('nav.companyName') }}</span>
+            <span class="breadcrumb-sep" aria-hidden="true">/</span>
+            <span class="breadcrumb-current" aria-current="page">{{ currentPageKey ? t(currentPageKey) : '' }}</span>
+          </nav>
+        </div>
+        <div class="header-right">
+          <LanguageSwitcher />
+          <ProfileMenu
+            @show-profile-details="showProfileDetails = true"
+            @show-tasks="showTasks = true"
+          />
+        </div>
+      </header>
+      <FilterBar />
+      <main class="main-content">
+        <div class="content-inner">
+          <router-view />
+        </div>
+      </main>
+    </div>
 
     <ProfileDetailsModal
       :is-open="showProfileDetails"
@@ -58,7 +93,8 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { api } from './api'
 import { useAuth } from './composables/useAuth'
 import { useI18n } from './composables/useI18n'
@@ -83,6 +119,46 @@ export default {
     const showProfileDetails = ref(false)
     const showTasks = ref(false)
     const apiTasks = ref([])
+    const route = useRoute()
+
+    // Sidebar navigation; each icon is a list of 24x24 stroke paths
+    const navGroups = [
+      {
+        labelKey: 'nav.groupOperations',
+        items: [
+          { path: '/', labelKey: 'nav.overview', icon: ['M3 3h7v9H3z', 'M14 3h7v5h-7z', 'M14 12h7v9h-7z', 'M3 16h7v5H3z'] },
+          { path: '/inventory', labelKey: 'nav.inventory', icon: ['M21 8l-9-5-9 5v8l9 5 9-5V8z', 'M3 8l9 5 9-5', 'M12 13v8'] },
+          { path: '/orders', labelKey: 'nav.orders', icon: ['M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z', 'M3 6h18', 'M16 10a4 4 0 01-8 0'] },
+          { path: '/spending', labelKey: 'nav.finance', icon: ['M12 2v20', 'M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6'] }
+        ]
+      },
+      {
+        labelKey: 'nav.groupPlanning',
+        items: [
+          { path: '/demand', labelKey: 'nav.demandForecast', icon: ['M3 3v18h18', 'M7 14l4-4 4 4 5-5'] },
+          { path: '/restocking', labelKey: 'nav.restocking', icon: ['M21 12a9 9 0 11-3-6.7', 'M21 3v6h-6'] },
+          { path: '/reports', labelKey: 'nav.reports', icon: ['M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z', 'M14 2v6h6', 'M8 13h8', 'M8 17h5'] }
+        ]
+      }
+    ]
+
+    // Breadcrumb label for the current route, looked up from the nav array
+    const currentPageKey = computed(() => {
+      const item = navGroups.flatMap(g => g.items).find(i => i.path === route.path)
+      return item ? item.labelKey : null
+    })
+
+    // Off-canvas drawer state (only visible below 1024px)
+    const sidebarOpen = ref(false)
+
+    // Close the drawer whenever the user navigates to another page
+    watch(() => route.path, () => {
+      sidebarOpen.value = false
+    })
+
+    const onKeydown = (e) => {
+      if (e.key === 'Escape') sidebarOpen.value = false
+    }
 
     // Merge mock tasks from currentUser with API tasks
     const tasks = computed(() => {
@@ -149,10 +225,20 @@ export default {
       }
     }
 
-    onMounted(loadTasks)
+    onMounted(() => {
+      loadTasks()
+      document.addEventListener('keydown', onKeydown)
+    })
+
+    onUnmounted(() => {
+      document.removeEventListener('keydown', onKeydown)
+    })
 
     return {
       t,
+      navGroups,
+      currentPageKey,
+      sidebarOpen,
       showProfileDetails,
       showTasks,
       tasks,
@@ -165,6 +251,47 @@ export default {
 </script>
 
 <style>
+:root {
+  /* spacing: 4px base */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+
+  /* surfaces and text */
+  --color-bg: #f8fafc;  --color-surface: #ffffff;  --color-surface-muted: #f1f5f9;
+  --color-border: #e2e8f0;  --color-border-strong: #cbd5e1;
+  --color-text: #0f172a;  --color-text-secondary: #334155;
+  --color-text-muted: #64748b;  --color-text-subtle: #94a3b8;
+
+  /* accent and status: base / soft background / strong text (for badges) */
+  --color-accent: #2563eb;   --color-accent-hover: #1d4ed8;  --color-accent-soft: #eff6ff;  --color-accent-strong: #1e40af;
+  --color-success: #16a34a;  --color-success-soft: #f0fdf4;  --color-success-strong: #166534;
+  --color-warning: #d97706;  --color-warning-soft: #fffbeb;  --color-warning-strong: #92400e;
+  --color-danger: #dc2626;   --color-danger-soft: #fef2f2;   --color-danger-strong: #991b1b;
+  --color-info: #0284c7;     --color-info-soft: #f0f9ff;     --color-info-strong: #075985;
+  --color-neutral-soft: #f1f5f9;  --color-neutral-strong: #475569;
+
+  /* charts keep their existing hues, so data colours don't shift meaning */
+  --chart-blue: #3b82f6; --chart-green: #10b981; --chart-amber: #f59e0b;
+  --chart-red: #ef4444;  --chart-slate: #64748b; --chart-violet: #8b5cf6;
+
+  /* type */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --text-xs: 12px; --text-sm: 13px; --text-base: 14px; --text-md: 16px;
+  --text-lg: 18px; --text-xl: 22px; --text-2xl: 28px;
+
+  /* shape and depth */
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-full: 999px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+  --focus-ring: 0 0 0 3px var(--color-accent-soft);
+
+  /* layout and layering */
+  --sidebar-width: 240px; --header-height: 64px; --content-max: 1440px;
+  --z-filterbar: 45; --z-header: 50; --z-backdrop: 55; --z-sidebar: 60;
+  --z-dropdown: 1000; --z-modal: 2000;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -172,9 +299,10 @@ export default {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: #f8fafc;
-  color: #1e293b;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  background: var(--color-bg);
+  color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -185,191 +313,360 @@ body {
   min-height: 100vh;
 }
 
-.top-nav {
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  position: sticky;
+/* ---------- Sidebar ---------- */
+.sidebar {
+  position: fixed;
   top: 0;
-  z-index: 100;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  z-index: var(--z-sidebar);
+  overflow-y: auto;
 }
 
-.nav-container {
-  max-width: 1600px;
-  margin: 0 auto;
+.sidebar-brand {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+}
+
+.brand-mark {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 0 2rem;
-  height: 70px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: #ffffff;
 }
 
-.nav-container > .nav-tabs {
-  margin-left: auto;
-  margin-right: 1rem;
+.brand-mark svg {
+  width: 18px;
+  height: 18px;
 }
 
-.nav-container > .language-switcher {
-  margin-right: 1rem;
-}
-
-.logo {
+.brand-text {
   display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.logo h1 {
-  font-size: 1.375rem;
+.brand-name {
+  font-size: var(--text-base);
   font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.025em;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
-.subtitle {
-  font-size: 0.813rem;
-  color: #64748b;
-  font-weight: 400;
-  padding-left: 0.75rem;
-  border-left: 1px solid #e2e8f0;
+.brand-subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.35;
+  margin-top: 2px;
 }
 
-.nav-tabs {
+.sidebar-nav {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
   display: flex;
-  gap: 0.25rem;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
-.nav-tabs a {
-  padding: 0.625rem 1.25rem;
-  color: #64748b;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.938rem;
-  border-radius: 6px;
-  transition: all 0.2s ease;
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-group-label {
+  padding: 0 var(--space-3) var(--space-2);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-subtle);
+}
+
+.nav-item {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--text-base);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.nav-tabs a:hover {
-  color: #0f172a;
-  background: #f1f5f9;
+.nav-item:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
 }
 
-.nav-tabs a.active {
-  color: #2563eb;
-  background: #eff6ff;
+.nav-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
-.nav-tabs a.active::after {
+.nav-item.active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* 3px accent bar on the left edge of the active item */
+.nav-item.active::before {
   content: '';
   position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #2563eb;
+  left: calc(-1 * var(--space-3));
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--color-accent);
+}
+
+.nav-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.nav-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-footer {
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  border-top: 1px solid var(--color-border);
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+/* ---------- Main column ---------- */
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--sidebar-width);
+  min-width: 0;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 0 var(--space-8);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.menu-toggle:hover {
+  background: var(--color-surface-muted);
+}
+
+.menu-toggle:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.menu-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--text-base);
+  white-space: nowrap;
+}
+
+.breadcrumb-root {
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.breadcrumb-sep {
+  color: var(--color-border-strong);
+}
+
+.breadcrumb-current {
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .main-content {
   flex: 1;
-  max-width: 1600px;
   width: 100%;
-  margin: 0 auto;
-  padding: 1.5rem 2rem;
 }
 
+.content-inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-8);
+}
+
+/* ---------- Page header ---------- */
 .page-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-6);
 }
 
 .page-header h2 {
-  font-size: 1.875rem;
+  font-size: var(--text-2xl);
   font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 0.375rem;
-  letter-spacing: -0.025em;
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .page-header p {
-  color: #64748b;
-  font-size: 0.938rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
 }
 
+/* ---------- Stat cards ---------- */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
 .stat-card {
-  background: white;
-  padding: 1.25rem;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
+  position: relative;
+  background: var(--color-surface);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .stat-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-label {
-  color: #64748b;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.625rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  margin-bottom: var(--space-2);
 }
 
 .stat-value {
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.025em;
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
-.stat-card.warning .stat-value {
-  color: #ea580c;
+/* Status variants: a small coloured dot before the label, not a coloured value */
+.stat-card.success .stat-label::before,
+.stat-card.warning .stat-label::before,
+.stat-card.danger .stat-label::before,
+.stat-card.info .stat-label::before {
+  content: '';
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
 }
 
-.stat-card.success .stat-value {
-  color: #059669;
-}
+.stat-card.success .stat-label::before { background: var(--color-success); }
+.stat-card.warning .stat-label::before { background: var(--color-warning); }
+.stat-card.danger .stat-label::before { background: var(--color-danger); }
+.stat-card.info .stat-label::before { background: var(--color-info); }
 
-.stat-card.danger .stat-value {
-  color: #dc2626;
-}
-
-.stat-card.info .stat-value {
-  color: #2563eb;
-}
-
+/* ---------- Cards ---------- */
 .card {
-  background: white;
-  border-radius: 10px;
-  padding: 1.25rem;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 1.25rem;
+  --card-pad: var(--space-6);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--card-pad);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-6);
+  min-width: 0;
 }
 
+/* Full-bleed header: cancels the card padding so its border spans edge to edge */
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.875rem;
-  border-bottom: 1px solid #e2e8f0;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin: calc(-1 * var(--card-pad)) calc(-1 * var(--card-pad)) var(--card-pad);
+  padding: var(--space-5) var(--card-pad);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .card-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.025em;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
 }
 
+/* ---------- Tables ---------- */
 .table-container {
   overflow-x: auto;
 }
@@ -380,26 +677,29 @@ table {
 }
 
 thead {
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-surface-muted);
 }
 
 th {
   text-align: left;
-  padding: 0.5rem 0.75rem;
+  padding: var(--space-3) var(--space-4);
   font-weight: 600;
-  color: #475569;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
 }
 
 td {
-  padding: 0.5rem 0.75rem;
-  border-top: 1px solid #f1f5f9;
-  color: #334155;
-  font-size: 0.875rem;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--text-base);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
 }
 
 tbody tr {
@@ -407,83 +707,208 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: #f8fafc;
+  background: var(--color-surface-muted);
 }
 
+/* A table that sits directly in a card runs edge to edge: it cancels the card
+   padding on the sides and bottom, and its outer cells pick the padding back up */
+.card > .table-container {
+  margin-left: calc(-1 * var(--card-pad));
+  margin-right: calc(-1 * var(--card-pad));
+}
+
+.card > .table-container:last-child {
+  margin-bottom: calc(-1 * var(--card-pad));
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.card > .card-header + .table-container {
+  margin-top: calc(-1 * var(--card-pad));
+}
+
+.card > .table-container th:first-child,
+.card > .table-container td:first-child {
+  padding-left: var(--card-pad);
+}
+
+.card > .table-container th:last-child,
+.card > .table-container td:last-child {
+  padding-right: var(--card-pad);
+}
+
+th.num,
+td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.clickable-cell {
+  cursor: pointer;
+}
+
+/* ---------- Badges ---------- */
 .badge {
-  display: inline-block;
-  padding: 0.313rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 18px;
+  white-space: nowrap;
+  background: var(--color-neutral-soft);
+  color: var(--color-neutral-strong);
 }
 
-.badge.success {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.badge.warning {
-  background: #fed7aa;
-  color: #92400e;
-}
-
-.badge.danger {
-  background: #fecaca;
-  color: #991b1b;
-}
-
-.badge.info {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
+.badge.success,
 .badge.increasing {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+  box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.15);
 }
 
-.badge.decreasing {
-  background: #fecaca;
-  color: #991b1b;
+.badge.warning,
+.badge.medium {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+  box-shadow: inset 0 0 0 1px rgba(217, 119, 6, 0.18);
+}
+
+.badge.danger,
+.badge.decreasing,
+.badge.high {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+  box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.15);
+}
+
+.badge.info,
+.badge.low {
+  background: var(--color-info-soft);
+  color: var(--color-info-strong);
+  box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.15);
 }
 
 .badge.stable {
-  background: #e0e7ff;
-  color: #3730a3;
+  background: var(--color-neutral-soft);
+  color: var(--color-neutral-strong);
+  box-shadow: inset 0 0 0 1px rgba(71, 85, 105, 0.12);
 }
 
-.badge.high {
-  background: #fecaca;
-  color: #991b1b;
+/* ---------- Buttons and inputs ---------- */
+.btn,
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.badge.medium {
-  background: #fed7aa;
-  color: #92400e;
+.btn-primary {
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  color: #ffffff;
 }
 
-.badge.low {
-  background: #dbeafe;
-  color: #1e40af;
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
 }
 
+.btn-secondary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
+.btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.btn:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Loading and error states ---------- */
 .loading {
   text-align: center;
-  padding: 3rem;
-  color: #64748b;
-  font-size: 0.938rem;
+  padding: var(--space-10);
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
 }
 
 .error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-  padding: 1rem;
-  border-radius: 8px;
-  margin: 1rem 0;
-  font-size: 0.938rem;
+  background: var(--color-danger-soft);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  color: var(--color-danger-strong);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  margin: var(--space-4) 0;
+  font-size: var(--text-base);
+}
+
+/* ---------- Responsive: sidebar becomes an off-canvas drawer ---------- */
+@media (max-width: 1023px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: none;
+  }
+
+  .sidebar-open .sidebar {
+    transform: translateX(0);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar-open .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    z-index: var(--z-backdrop);
+  }
+
+  .app-main {
+    margin-left: 0;
+  }
+
+  .app-header {
+    padding: 0 var(--space-4);
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  .content-inner {
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
+@media (max-width: 640px) {
+  .breadcrumb-root,
+  .breadcrumb-sep {
+    display: none;
+  }
 }
 </style>
