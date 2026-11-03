@@ -6,6 +6,15 @@ export default {
     orders: '注文',
     finance: '財務',
     demandForecast: '需要予測',
+    restocking: '補充発注',
+    reports: 'レポート',
+    groupOperations: 'オペレーション',
+    groupPlanning: 'プランニング',
+    toggleMenu: 'ナビゲーションメニューを切り替え',
+    collapseSidebar: 'サイドバーを折りたたむ',
+    expandSidebar: 'サイドバーを展開',
+    mainNavigation: 'メインナビゲーション',
+    breadcrumb: 'パンくずリスト',
     companyName: '触媒コンポーネンツ',
     subtitle: '在庫管理システム'
   },
@@ -126,6 +135,24 @@ export default {
       status: 'ステータス',
       expectedDelivery: '予定配達日',
       actualDelivery: '実際の配達日'
+    },
+    submittedOrders: {
+      title: '送信済みの補充発注',
+      empty: '送信済みの補充発注はまだありません',
+      loadFailed: '送信済みの補充発注を読み込めませんでした',
+      leadTimeDays: '{count}日',
+      statuses: {
+        submitted: '送信済み'
+      },
+      table: {
+        orderNumber: '発注番号',
+        items: '品目',
+        submittedDate: '送信日',
+        leadTime: 'リードタイム',
+        expectedDelivery: '納品予定日',
+        total: '合計',
+        status: 'ステータス'
+      }
     }
   },
 
@@ -185,6 +212,39 @@ export default {
       change: '変化',
       trend: 'トレンド',
       period: '期間'
+    }
+  },
+
+  // Restocking
+  restocking: {
+    title: '補充発注',
+    description: '需要予測に基づき、予算内で補充発注を計画します',
+    budget: '予算',
+    budgetHint: '需要が増加している品目を優先し、次に不足額の大きい順に予算を割り当てます。残りの予算で全量を賄えない最初の品目で割り当てを終了します。',
+    totalCost: '合計金額',
+    budgetRemaining: '予算残額',
+    longestLeadTime: '最長リードタイム',
+    recommendations: '推奨補充品目',
+    itemsFunded: '{total}品目中{funded}品目に予算を割り当て',
+    notFunded: '予算外',
+    noShortfall: '現在の在庫で予測需要をすべて満たしています。補充は不要です。',
+    days: '{count}日',
+    placeOrder: '発注する',
+    placingOrder: '発注中...',
+    orderPlaced: '発注 {orderNumber} を送信しました。',
+    viewOrders: '注文画面で確認',
+    orderFailed: '発注に失敗しました',
+    loadFailed: '補充データを読み込めませんでした',
+    table: {
+      sku: 'SKU',
+      item: '品目',
+      trend: 'トレンド',
+      onHand: '在庫数',
+      forecast: '予測需要',
+      recommendedQty: '推奨数量',
+      unitCost: '単価',
+      lineTotal: '小計',
+      leadTime: 'リードタイム'
     }
   },
 
